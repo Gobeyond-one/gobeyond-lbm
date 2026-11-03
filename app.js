@@ -1,4 +1,5 @@
-import {ReactorView} from './scene.js';
+import {ReactorView} from './scene.js?v=20261103-cloud';
+import {FieldCloud} from './pointcloud.js?v=20261103-cloud';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const icon=id=>`<svg aria-hidden="true"><use href="#i-${id}"/></svg>`;
@@ -52,17 +53,73 @@ $('#grid-zoom').addEventListener('click',()=>{if(volumeMode)setGridMode(false);g
 async function setGridMode(value){volumeMode=value;active([$('#grid-slice-mode'),$('#grid-volume-mode')],value?$('#grid-volume-mode'):$('#grid-slice-mode'));canvas.hidden=value;$('#grid-volume-view').hidden=!value;$('#grid-coordinate').textContent=value?'三维格点 · 每 6 格抽样显示':$('#grid-coordinate').textContent;if(value){try{const d=await gridPromise;if(!gridVolume){gridVolume=new ReactorView('grid-volume-view',{grid:true});gridVolume.makeVolume(d.mask,d.meta,d.ibm);}gridVolume.resize();refreshLayers();}catch{toast('网格数据暂时不可用');}}else drawGrid();}
 $('#grid-slice-mode').addEventListener('click',()=>setGridMode(false));$('#grid-volume-mode').addEventListener('click',()=>setGridMode(true));
 
-// Recorded CFD replay. There is no simulated browser-side GPU job submission.
-const simulation=new ReactorView('simulation-view',{dark:true});simulation.template();simulation.addPlanes();
-let resultType='startup',startupMeta,startupBuffer,cadBuffer,frame=0,playing=false,lastFrame=0,resultVisible=false,loaded=false;
-const resultPromise=Promise.all([json('assets/startup.json'),binary('assets/startup.bin'),binary('assets/cad-snapshot.bin')]).then(([meta,buffer,cad])=>{startupMeta=meta;startupBuffer=buffer;cadBuffer=cad;loaded=true;$('#time-slider').max=meta.frames.length-1;$('#result-loading').hidden=true;displayFrame();return meta;}).catch(()=>{$('#result-loading').textContent='流场记录载入失败，请刷新重试';});
-function displayFrame(){if(!loaded)return;if(resultType==='startup'){const f=startupMeta.frames[frame];simulation.updatePlanes(startupBuffer,frame,startupMeta);simulation.setAngle(f.step*startupMeta.omega_lu);$('#simulation-time').textContent=`t = ${f.time_s.toFixed(5)} s`;$('#rotation-label').textContent=`${f.revolutions.toFixed(1)} 转`;$('#time-slider').value=frame;}else{simulation.updatePlanes(cadBuffer,0,startupMeta);simulation.setAngle(.0010471974965184927*1200);$('#simulation-time').textContent='t = 0.00449 s';$('#rotation-label').textContent='0.2 转';}}
-function setPlaying(value){playing=value&&resultType==='startup';$('#playback-toggle').innerHTML=icon(playing?'pause':'play');$('#playback-toggle').setAttribute('aria-label',playing?'暂停流场回放':'播放流场回放');}
-$('#playback-toggle').addEventListener('click',async()=>{await resultPromise;if(!loaded)return;if(frame===startupMeta.frames.length-1)frame=0;setPlaying(!playing);displayFrame();});
-$('#time-slider').addEventListener('input',()=>{setPlaying(false);frame=Number($('#time-slider').value);displayFrame();});$('#playback-reset').addEventListener('click',()=>{if(resultType==='cad'){simulation.reset();return;}frame=0;setPlaying(false);displayFrame();});
-$$('[data-result]').forEach(b=>b.addEventListener('click',async()=>{resultType=b.dataset.result;active($$('[data-result]'),b);setPlaying(false);const cad=resultType==='cad';$('#time-slider').disabled=cad;$('#playback-toggle').disabled=cad;$('#playback-label').textContent=cad?'场快照':'逐帧回放';$('#simulation-case-title').textContent=cad?'带孔梯形叶片 · CAD 接入算例':'六叶搅拌槽 · 从静止启动';$('#result-description').textContent=cad?'由 CAD 导出的带孔叶片进入实际求解，孔洞、固体区域与 IBM 节点共同参与流场及示踪剂计算。':'回放从零速度初始条件开始的原生计算记录，观察桨区流动与槽内循环的形成。';$('#result-scope-label').textContent=cad?'完成范围':'记录范围';$('#result-scope').textContent=cad?'1200 步 · 接入短算':'0 → 60 圈';if(cad)await simulation.loadCad('perforated');else simulation.template();await resultPromise;if(!cad)frame=0;displayFrame();}));
-new IntersectionObserver(es=>{resultVisible=es[0].isIntersecting;if(resultVisible&&!reduced&&!simulation.everPlayed&&loaded){simulation.everPlayed=true;lastFrame=performance.now()+550;setPlaying(true);}},{threshold:.25}).observe($('#simulation-view'));
-function advance(t){if(playing&&resultVisible&&loaded&&t-lastFrame>220){lastFrame=t;if(frame>=startupMeta.frames.length-1)setPlaying(false);else{frame++;displayFrame();}}requestAnimationFrame(advance);}requestAnimationFrame(advance);
+// Saved volume fields in fixed tank coordinates. Continuous looping is display only.
+const simulation=new ReactorView('simulation-view',{dark:true});simulation.template({phase:0});simulation.addPlanes();
+if(simulation.planeGroup)simulation.planeGroup.visible=false;
+let resultType='startup',cloudMeta,cloud,qBuffer,vectorBuffer,startupMeta,startupBuffer;
+let frame=0,playing=false,resultVisible=false,loaded=false,phase=0,cycles=0,requestId=0;
+let cloudPromise,startupPromise;
+function loadCloud(){return cloudPromise??=Promise.all([json('assets/cloud.json'),binary('assets/cloud-positions.bin'),binary('assets/cloud-arrow-positions.bin'),binary('assets/cloud-concentration.bin'),binary('assets/cloud-vectors.bin')]).then(([meta,positions,arrows,q,vectors])=>{
+  if(positions.byteLength!==meta.point_count*12||q.byteLength!==meta.frames.length*meta.point_count*2||vectors.byteLength!==meta.frames.length*meta.arrow_count*6)throw Error('三维数据长度检查失败');
+  cloudMeta=meta;qBuffer=q;vectorBuffer=vectors;
+  if(!simulation.failed){cloud=new FieldCloud(simulation,meta,new Float32Array(positions),new Float32Array(arrows));cloud.group.visible=false;}
+  return meta;
+});}
+function loadStartup(){return startupPromise??=Promise.all([json('assets/startup.json'),binary('assets/startup.bin')]).then(([meta,buffer])=>{startupMeta=meta;startupBuffer=buffer;});}
+function cloudStyle(){cloud?.setStyle({opacity:Number($('#cloud-opacity').value),cutaway:$('#cloud-cutaway').checked,arrows:$('#cloud-arrows').checked,deviation:$('#cloud-deviation').checked,speedMax:12});}
+for(const id of ['cloud-opacity','cloud-cutaway','cloud-arrows','cloud-deviation'])$(`#${id}`).addEventListener('input',()=>{cloudStyle();displayFrame();});
+function setPlaying(value){playing=!!value&&loaded;$('#playback-toggle').innerHTML=icon(playing?'pause':'play');$('#playback-toggle').setAttribute('aria-label',playing?'暂停流场回放':'播放流场回放');$('#playback-label').textContent=playing?'循环播放':'已暂停 · 可循环';}
+function displayFrame(){
+  if(!loaded)return;
+  if(resultType==='startup'){
+    frame=Math.min(startupMeta.frames.length-1,Math.floor(phase*startupMeta.frames.length));const f=startupMeta.frames[frame];
+    simulation.updatePlanes(startupBuffer,frame,startupMeta);simulation.setAngle(f.step*startupMeta.omega_lu);
+    $('#simulation-time').textContent=`开机后 ${f.time_s.toFixed(5)} s`;$('#simulation-clock').textContent=`静止启动 · 实算帧 ${frame+1} / ${startupMeta.frames.length}`;$('#rotation-label').textContent=`${f.revolutions.toFixed(1)} 转`;
+  }else{
+    const cursor=phase*(cloudMeta.frames.length-1),lo=Math.floor(cursor),hi=Math.min(lo+1,cloudMeta.frames.length-1),blend=cursor-lo;
+    frame=lo;const a=cloudMeta.frames[lo],b=cloudMeta.frames[hi],step=a.step+(b.step-a.step)*blend,time=a.time_s+(b.time_s-a.time_s)*blend,tracer=a.tracer_time_s+(b.tracer_time_s-a.tracer_time_s)*blend;
+    cloud?.update(qBuffer,vectorBuffer,lo,hi,blend);simulation.setAngle(step*a.omega_lu);
+    $('#simulation-time').textContent=resultType==='concentration'?`释放后 ${tracer.toFixed(4)} s`:`开机后 ${time.toFixed(4)} s`;
+    $('#simulation-clock').textContent=`${resultType==='concentration'?`开机后 ${time.toFixed(4)} s · `:''}实算帧 ${lo+1} / ${cloudMeta.frames.length} · 显示插值`;
+    $('#rotation-label').textContent=`${(step*a.omega_lu/(2*Math.PI)).toFixed(1)} 转`;
+    $('#result-metric').textContent=resultType==='concentration'?`${(a.metrics.global_cv*100).toFixed(2)}%`:cloudMeta.point_count.toLocaleString('en-US');
+  }
+  $('#time-slider').value=Math.round(phase*1000);$('#simulation-view').dataset.frame=frame;$('#simulation-view').dataset.cycle=cycles;
+}
+async function selectResult(type){
+  const ticket=++requestId;resultType=type;loaded=false;phase=0;cycles=0;setPlaying(false);
+  const concentration=type==='concentration',startup=type==='startup';active($$('[data-result]'),$(`[data-result="${type}"]`));$$('[data-result]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.result===type)));
+  $('#result-loading').hidden=false;$('#result-loading').textContent=concentration?'载入搅拌与扩散体积场…':startup?'载入静止启动记录…':'载入真实三维流场…';$('#playback-toggle').disabled=true;$('#time-slider').disabled=true;
+  $('#cloud-controls').hidden=startup;$('#simulation-legend').classList.toggle('concentration',concentration);
+  $('#legend-title').textContent=concentration?'相对浓度 C / C∞':'速率 / m·s⁻¹';$('#legend-mid').textContent=concentration?'1':'6';$('#legend-high').textContent=concentration?'≥2':'12+';
+  $('#simulation-case-title').textContent=startup?'六叶搅拌槽 · 流体从静止启动':concentration?'六叶搅拌槽 · 示踪剂对流与扩散':'六叶搅拌槽 · 三维速度场';
+  $('#simulation-heading').innerHTML=concentration?'随流动展开，<br>在扩散中混合。':'叶片提供动力，<br>流场响应结构。';
+  $('#result-description').textContent=concentration?'相同物性的示踪剂耦合对流、分子扩散与湍流扩散。分子扩散系数 10⁻⁹ m²/s，湍流 Schmidt 数 0.7。':startup?'流体以零速度开始，搅拌桨按给定转速启动。这组记录保留两个真实速度切片，供观察启动过程。':'颜色表示固定空间采样位置的速率，箭头表示实际速度方向。旋转查看桨区射流和槽内上下循环。';
+  $('#result-scope').textContent=startup?'静止 → 60 转 · 28 帧':concentration?'释放后 0–0.8982 s · 81 帧':'60 转预热后 · 81 帧体积场';
+  $('#result-metric-label').textContent=concentration?'全槽 CV（实算帧）':startup?'流体初始速度':'三维采样点';$('#result-metric').textContent=startup?'0 m/s':'30,720';
+  $('#simulation-hint').textContent=startup?'拖动旋转 · 静止启动的两个实际切片':'拖动旋转 · 固定空间的体积采样点';
+  $('#simulation-origin-note').textContent=startup?'此处 t=0 为流体静止时刻；播放终点自动回到起点。':'示踪剂在预热 60 转后释放；释放后 t=0 不代表流体静止。';
+  try{
+    if(startup)await loadStartup();else await loadCloud();
+    if(ticket!==requestId)return;
+    if(cloud){cloud.group.visible=!startup;cloud.setMode(concentration);cloudStyle();}
+    if(simulation.planeGroup)simulation.planeGroup.visible=startup;
+    simulation.template({phase:startup?-30:0});loaded=true;$('#result-loading').hidden=true;$('#playback-toggle').disabled=false;$('#time-slider').disabled=false;
+    displayFrame();setPlaying(!reduced);
+  }catch(error){if(ticket===requestId){$('#result-loading').textContent='数据载入失败，请刷新重试';setPlaying(false);}console.error(error);}
+}
+$$('[data-result]').forEach(b=>b.addEventListener('click',()=>selectResult(b.dataset.result)));
+$('#playback-toggle').addEventListener('click',()=>{if(!loaded)return;if(phase>=1)phase=0;setPlaying(!playing);displayFrame();});
+$('#time-slider').addEventListener('input',()=>{setPlaying(false);phase=Number($('#time-slider').value)/1000;displayFrame();});
+$('#playback-reset').addEventListener('click',()=>{phase=0;cycles=0;setPlaying(false);displayFrame();});
+new IntersectionObserver(es=>{resultVisible=es[0].isIntersecting;},{threshold:.15}).observe($('#simulation-view'));
+let previousPlayback=0,lastDisplay=0;
+function advance(t){
+  const dt=previousPlayback?Math.min(.1,(t-previousPlayback)/1000):0;previousPlayback=t;
+  if(playing&&resultVisible&&loaded&&!document.hidden){phase+=dt/(resultType==='startup'?8:14);if(phase>=1){cycles+=Math.floor(phase);phase%=1;}if(t-lastDisplay>30){lastDisplay=t;displayFrame();}}
+  requestAnimationFrame(advance);
+}
+requestAnimationFrame(advance);selectResult('startup');
 
 const cases=[
  {id:'mass-transfer',module:'009',name:'气液传质',category:'interface',file:'mass-transfer.gif',tags:['Henry 分配','MRT'],description:'观察界面两侧浓度分配，以及溶质穿过气液界面的过程。',method:'相场 / 流场 + D3Q7 传质 MRT',scope:'已有耦合算例；稀溶质单向耦合，不包含气泡收缩反馈。'},
@@ -74,7 +131,7 @@ const cases=[
  {id:'phase-field',module:'008',name:'多相界面演化',category:'interface',file:'phase-field.png',tags:['相场法','界面不稳定性'],description:'通过相场与流动耦合，呈现两相界面的变形与演化。',method:'双 D2Q9 MRT：Cahn–Hilliard / 流场',scope:'展示二维界面不稳定性计算快照。不同密度比、迁移率与边界配置有独立的适用范围。'},
  {id:'reactive-topology',module:'002',name:'反应与形貌变化',category:'reaction',file:'reactive-topology.gif',tags:['溶解析出','保守拓扑更新'],description:'表面反应改变固体形貌，同时跟踪溶质输运和物质库存。',method:'D2Q5 三溶质 BGK + 表面反应 / 邻接生长',scope:'已有反应扩散、溶解及析出演示，保留数值改写和验证边界说明。'}
 ];
-const gallery=$('#case-gallery');for(const c of cases){const poster=c.file.endsWith('.gif')?`${c.id}-poster.png`:c.file,b=document.createElement('button');b.className='case-card';b.dataset.category=c.category;b.setAttribute('aria-label',`查看${c.name}真实算例`);b.innerHTML=`<div class="case-thumbnail"><img src="assets/cases/${poster}" alt="${c.name}的实际数值结果" loading="lazy" width="640" height="360"><span class="case-index">${c.module} / SOLVER OUTPUT</span></div><div class="case-copy"><div class="case-topline"><h3>${c.name}</h3>${icon('up')}</div><p>${c.description}</p><div class="case-tags">${c.tags.map(t=>`<span>${t}</span>`).join('')}</div></div>`;b.addEventListener('click',()=>openCase(c));if(c.file.endsWith('.gif')&&!reduced){b.addEventListener('mouseenter',()=>b.querySelector('img').src=`assets/cases/${c.file}`);b.addEventListener('mouseleave',()=>b.querySelector('img').src=`assets/cases/${poster}`);}gallery.append(b);}
+const gallery=$('#case-gallery');for(const c of cases){const animated=c.file.endsWith('.gif'),poster=animated?`${c.id}-poster.png`:c.file,b=document.createElement('button');b.className='case-card';b.dataset.category=c.category;b.setAttribute('aria-label',`查看${c.name}真实算例`);b.innerHTML=`<div class="case-thumbnail"><img src="assets/cases/${animated&&reduced?poster:c.file}" alt="${c.name}的实际数值${animated?'动图':'结果'}" loading="lazy" width="640" height="360"><span class="case-index">${c.module} / ${animated?'动态结果':'结果快照'}</span></div><div class="case-copy"><div class="case-topline"><h3>${c.name}</h3>${icon('up')}</div><p>${c.description}</p><div class="case-tags">${c.tags.map(t=>`<span>${t}</span>`).join('')}</div></div>`;b.addEventListener('click',()=>openCase(c));gallery.append(b);}
 $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>{active($$('[data-filter]'),b);for(const card of $$('.case-card'))card.hidden=b.dataset.filter!=='all'&&card.dataset.category!==b.dataset.filter;}));
 const dialog=$('#detail-dialog');let lastFocus;
 function openDialog(html){lastFocus=document.activeElement;$('#dialog-content').innerHTML=html;dialog.showModal();document.body.style.overflow='hidden';$('.dialog-close').focus();}
@@ -83,7 +140,7 @@ $('.dialog-close').addEventListener('click',closeDialog);dialog.addEventListener
 function openCase(c){openDialog(`<p class="dialog-eyebrow">MODEL ${c.module} · 实际求解器输出</p><h2 class="dialog-title" id="dialog-title">${c.name}</h2><img class="dialog-image" src="assets/cases/${reduced&&c.file.endsWith('.gif')?c.id+'-poster.png':c.file}" alt="${c.name}模拟结果"><p class="dialog-text">${c.description}</p><dl class="dialog-facts"><div><dt>数值模型</dt><dd>${c.method}</dd></div><div><dt>算例类型</dt><dd>既有研究算例 · 模型输出</dd></div></dl><p class="dialog-text">${c.scope}</p>`);}
 const modelRows=[['001','多组分 / 多孔输运','D2Q9 Shan–Chen / 灰度反弹'],['002','反应扩散 / 溶解析出','D2Q5 多溶质 / 表面反应'],['003','自然对流','流 MRT / 热 MRT / 浮力'],['004','非牛顿流动','D3Q19 / 截断幂律'],['005','固液相变','D3Q7 总焓 SRT / MRT'],['006','移动颗粒','D3Q19 / 动量交换'],['007','共轭传热','流动 / 热 MRT / 共轭界面'],['008','多相相场','Cahn–Hilliard / 压力流场'],['009','气液传质','Henry 分配 / 传质 MRT'],['010','反应流动','多物种输运 / 隐式反应'],['011','二维搅拌','TRT / 体积惩罚'],['012','三维反应搅拌','D3Q19 / 守恒 FV / A+B→C'],['014','LES 三维搅拌','MRT / Coherent LES / IBM']];
 $('#model-directory').addEventListener('click',()=>openDialog(`<p class="dialog-eyebrow">GOBEYOND · MODEL LIBRARY</p><h2 class="dialog-title" id="dialog-title">围绕物理过程，积累求解能力。</h2><p class="dialog-text">模型库包含 13 类物理模块。各模块有独立的验证与边界范围；具备某个模块，不代表任意跨物理组合已经耦合。</p><table class="model-list"><thead><tr><th>模块</th><th>物理过程</th><th>模型方向</th></tr></thead><tbody>${modelRows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>`));
-function resultNotes(){openDialog(`<p class="dialog-eyebrow">REAL DATA · 可追溯算例</p><h2 class="dialog-title" id="dialog-title">这些画面来自哪里？</h2><p class="dialog-text">启动回放来自原生 Cartesian 流场的只读记录，从流体静止开始，按给定转速启动搅拌桨。网页选取 28 个实际记录帧，展示 45° 纵向切面与桨高处水平切面，回放间隔经过压缩，物理时间以界面读数为准。</p><dl class="dialog-facts"><div><dt>基准槽回放</dt><dd>150 mm 槽体 · 2672 rpm · 0–60 圈</dd></div><div><dt>新拓扑快照</dt><dd>带孔梯形叶片 · 1200 步 · 0.004491 s</dd></div><div><dt>流动分支</dt><dd>Coherent LES / IBM，现有 standard-MRT 研究变体</dd></div><div><dt>网页角色</dt><dd>真实数据回放与几何预览；不在浏览器提交 GPU 计算任务</dd></div></dl><p class="dialog-text">CAD 算例完成几何一致性、均匀浓度与守恒检查。这里的启动回放和短算不构成新几何的混合时间、稳态或工业性能验证。</p>`);}
+function resultNotes(){openDialog(`<p class="dialog-eyebrow">REAL DATA · 可追溯算例</p><h2 class="dialog-title" id="dialog-title">三维流动，与搅拌扩散。</h2><p class="dialog-text">三维点云来自既有小槽可视化补算保存的 81 帧体积场，选取 30,720 个真实液体控制体内的空间采样位置。旋转网格先按各帧相位重采样到固定槽体坐标，再进行显示插值。点云是欧拉场值，不是液体粒子轨迹；箭头保留实际笛卡尔速度方向。</p><dl class="dialog-facts"><div><dt>三维记录</dt><dd>开机后 1.3473–2.2455 s；预热 60 转后释放示踪剂</dd></div><div><dt>扩散耦合</dt><dd>对流 + 独立分子扩散 Dm = 10⁻⁹ m²/s + 湍流扩散 Scₜ = 0.7</dd></div><div><dt>颜色</dt><dd>速度切片使用 0–12+ m/s；浓度点云按相对浓度 C/C∞，≥2 使用饱和色；可仅显示偏差超过 5% 的区域</dd></div><div><dt>静止启动记录</dt><dd>另一组独立启动补算的 28 个实际切片帧，开机后 0–1.3473 s</dd></div><div><dt>模型与范围</dt><dd>014 衍生 Coherent LES / IBM / standard-MRT 研究变体</dd></div></dl><p class="dialog-text">三维展示与静止启动属于不同记录，不拼接成同一次流动实现。CV 读数沿用对应实算帧的全分辨率统计；展示点的抽样与插值不用于重新计算混合时间。循环结束会回到记录起点，不表示物理场发生周期回归。</p>`);}
 $('#show-result-notes').addEventListener('click',resultNotes);
 $('#data-notes').addEventListener('click',()=>openDialog(`<p class="dialog-eyebrow">PRODUCT SCOPE · 数据与能力</p><h2 class="dialog-title" id="dialog-title">把能力说明，与真实结果放在一起。</h2><p class="dialog-text">几何区使用实际 CadQuery/STL 输出，并提供成熟反应器的参数化预览。网格区来自带孔叶片算例保存的实际计算格点与 IBM 节点；二维切片为原始分辨率，三维格点采用抽样展示。参数修改会更新预览与导出文件，后续网格和结果区仍展示已计算示例。</p><p class="dialog-text">当前 CAD 求解链路支持圆柱流体域、共轴同转速的刚体，以及相应位置的静止构件。一般几何建模与一般物理求解是不同的能力层，进出口、独立运动轴及其他边界需要对应的求解接口。</p><p class="dialog-text">算例图库全部来自已有数值模型输出。模型保留各自适用与验证范围，库内模块并不意味着任意组合均已耦合。产品页展示已有能力，不承诺所有输入都能未经检查地求解。</p>`));
 

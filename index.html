@@ -6,9 +6,9 @@
   <meta name="description" content="格流 LBM · GoBeyond：通过自然语言与参数化模板构建几何，生成格子网格，探索流动、传热、传质与反应模拟。">
   <title>格流 LBM · 从结构想象，到流动洞见</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261103-cloud">
   <script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js","three/addons/controls/OrbitControls.js":"./assets/vendor/OrbitControls.js"}}</script>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=20261103-cloud"></script>
 </head>
 <body>
 <svg class="symbols" aria-hidden="true"><defs>
@@ -108,15 +108,16 @@
 
 <section class="simulation-section" id="simulation">
  <div class="wrap">
-  <div class="section-heading light"><div><p class="eyebrow"><span class="chapter">03</span> SIMULATION</p><h2>看见流动，<br>也看见结构的作用。</h2></div><p>用内置求解器推进真实物理。<br>从流体静止，到叶片驱动、射流与上下循环。</p></div>
+  <div class="section-heading light"><div><p class="eyebrow"><span class="chapter">03</span> SIMULATION</p><h2>看见流动，<br>也看见混合。</h2></div><p>从三维流场看清槽内循环，<br>再看示踪剂随搅拌、对流与扩散逐渐展开。</p></div>
   <div class="simulation-workbench">
-   <div class="simulation-toolbar"><div class="segmented on-dark"><button class="active" data-result="startup">基准槽启动回放</button><button data-result="cad">新拓扑计算快照</button></div><span class="real-data-badge"><i></i> 实际计算数据</span></div>
-   <div class="simulation-body"><div class="simulation-stage"><div id="simulation-view" class="three-view" role="img" aria-label="原生搅拌流场在三维结构上的真实切片回放"></div><div class="simulation-stage-info"><span id="simulation-case-title">六叶搅拌槽 · 从静止启动</span><b id="simulation-time">t = 0.00000 s</b></div><div class="color-legend"><span>速率 / m·s⁻¹</span><i></i><div><span>0</span><span>6</span><span>12+</span></div></div><span class="simulation-hint">拖动旋转，查看两个相交切面</span><div class="loading-note" id="result-loading">载入真实流场记录…</div></div>
-    <aside class="simulation-insights"><p class="mini-label">CASE STUDY / 搅拌槽</p><h3>叶片提供动力，<br>流场响应结构。</h3><p id="result-description">回放从零速度初始条件开始的原生计算记录，观察桨区流动与槽内循环的形成。</p><dl><div><dt>槽径 / 液高</dt><dd>150 / 150 mm</dd></div><div><dt>桨径 / 转速</dt><dd>50 mm / 2672 rpm</dd></div><div><dt>流动模型</dt><dd>Coherent LES · IBM</dd></div><div><dt id="result-scope-label">记录范围</dt><dd id="result-scope">0 → 60 圈</dd></div></dl><button class="text-button on-dark-text" id="show-result-notes">关于这组结果 <svg><use href="#i-up"/></svg></button></aside>
+   <div class="simulation-toolbar"><div class="segmented on-dark" aria-label="搅拌结果展示"><button class="active" data-result="startup" aria-pressed="true">三维流场</button><button data-result="concentration" aria-pressed="false">搅拌与扩散</button></div><span class="real-data-badge"><i></i> 实际计算数据</span></div>
+   <div class="cloud-controls" id="cloud-controls" hidden><span class="cloud-format" id="cloud-format">三维浓度点云</span><label><input id="cloud-arrows" type="checkbox" checked>流动方向</label><label><input id="cloud-cutaway" type="checkbox">半槽显示</label><label id="deviation-control"><input id="cloud-deviation" type="checkbox">只看浓度偏差 &gt;5%</label><label class="cloud-opacity">点云透明度<input id="cloud-opacity" type="range" min="0.06" max="0.5" step="0.01" value="0.26" aria-label="点云透明度"></label></div>
+   <div class="simulation-body"><div class="simulation-stage"><div id="simulation-view" class="three-view" role="img" aria-label="可切换三维速度切片与扩散浓度点云的真实计算结果"></div><div class="simulation-stage-info"><span id="simulation-case-title">六叶搅拌槽 · 从静止启动的速度场</span><b id="simulation-time">载入中…</b><small id="simulation-clock"></small></div><div class="color-legend" id="simulation-legend"><span id="legend-title">速率 / m·s⁻¹</span><i></i><div><span id="legend-low">0</span><span id="legend-mid">6</span><span id="legend-high">12+</span></div></div><span class="simulation-hint" id="simulation-hint">拖动旋转 · 查看两个相交切面</span><div class="loading-note" id="result-loading">载入真实流场记录…</div></div>
+    <aside class="simulation-insights"><p class="mini-label">CASE STUDY / 搅拌槽</p><h3 id="simulation-heading">叶片提供动力，<br>流场响应结构。</h3><p id="result-description">用三维体积采样点观察搅拌后的速度分布，并通过箭头辨认上下循环。</p><dl><div><dt>槽径 / 液高</dt><dd>150 / 150 mm</dd></div><div><dt>桨径 / 转速</dt><dd>50 mm / 2672 rpm</dd></div><div><dt>流动模型</dt><dd>Coherent LES · IBM</dd></div><div><dt id="result-scope-label">记录范围</dt><dd id="result-scope">60 转预热后的 81 帧体积场</dd></div><div><dt id="result-metric-label">三维采样点</dt><dd id="result-metric">30,720</dd></div></dl><button class="text-button on-dark-text" id="show-result-notes">关于这组结果 <svg><use href="#i-up"/></svg></button></aside>
    </div>
-   <div class="playback"><button id="playback-toggle" class="playback-button" aria-label="播放流场回放"><svg><use href="#i-play"/></svg></button><span class="playback-label" id="playback-label">逐帧回放</span><input id="time-slider" type="range" min="0" max="27" step="1" value="0" aria-label="回放时间"><span id="rotation-label">0.0 转</span><button id="playback-reset" class="icon-button" aria-label="回到初始静止帧"><svg><use href="#i-rotate"/></svg></button></div>
+   <div class="playback"><button id="playback-toggle" class="playback-button" aria-label="播放流场回放"><svg><use href="#i-play"/></svg></button><span class="playback-label" id="playback-label">循环播放</span><input id="time-slider" type="range" min="0" max="1000" step="1" value="0" aria-label="回放时间"><span id="rotation-label">60.0 转</span><button id="playback-reset" class="icon-button" aria-label="回到当前记录起点"><svg><use href="#i-rotate"/></svg></button></div>
   </div>
-  <div class="simulation-footnote"><span>速度场来自原始计算输出，网页负责回放与观察。</span><span>新拓扑算例已通过几何一致性、均匀浓度与守恒检查。</span></div>
+  <div class="simulation-footnote"><span>点云显示实际体积场值，不是粒子轨迹；帧间插值仅用于平滑显示。</span><span id="simulation-origin-note">三维记录从 60 转预热后开始；可切换查看流体静止启动的切片记录。</span></div>
  </div>
 </section>
 
