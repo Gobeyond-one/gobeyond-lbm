@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f2">
+  <meta name="description" content="格流 LBM · GoBeyond：通过自然语言与参数化模板构建几何，生成格子网格，探索流动、传热、传质与反应模拟。">
+  <title>格流 LBM · 从结构想象，到流动洞见</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js","three/addons/controls/OrbitControls.js":"./assets/vendor/OrbitControls.js"}}</script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+<svg class="symbols" aria-hidden="true"><defs>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 5l7 7-7 7"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6h12v12"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+<symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 2 10 5v10l-10 5-10-5V7Zm0 10v10M2 7l10 5 10-5M7 4.5l10 5v10"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><path d="M3 3h18v18H3ZM3 9h18M3 15h18M9 3v18M15 3v18"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L20 5"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 10a8 8 0 1 0 0 6M20 4v6h-6"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+</defs></svg>
+<header class="header">
+ <a class="brand" href="#top" aria-label="格流 LBM 首页"><span class="brand-mark"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>格流 <b>LBM</b><small>GOBEYOND</small></span></a>
+ <nav aria-label="主导航"><a href="#geometry">几何建模</a><a href="#grid">网格生成</a><a href="#simulation">模拟结果</a><a href="#solvers">求解器库</a></nav>
+ <a class="nav-cta" href="#simulation">查看真实算例 <svg><use href="#i-up"/></svg></a>
+ <button class="mobile-menu" aria-label="打开导航" aria-expanded="false"><span></span><span></span></button>
+</header>
+<main>
+<section class="hero wrap" id="top">
+ <div class="hero-copy">
+  <p class="eyebrow"><span class="status-dot"></span> AI 驱动的工程仿真</p>
+  <h1>从结构想象，<br>到<span>流动洞见。</span></h1>
+  <p class="hero-description">用语言定义几何，用格子求解物理。<br>让建模、网格与模拟，成为一条连续的工作流。</p>
+  <div class="hero-actions"><a class="button primary" href="#geometry">探索完整流程 <svg><use href="#i-arrow"/></svg></a><a class="text-link" href="#simulation"><span class="play-circle"><svg><use href="#i-play"/></svg></span> 观看真实算例</a></div>
+  <div class="hero-notes"><span>自由几何</span><span>GPU 计算</span><span>多物理模型</span></div>
+ </div>
+ <div class="hero-visual">
+  <div class="visual-kicker"><span class="tiny-cross">＋</span> STRUCTURE → FLOW <span>01 / STIRRED TANK</span></div>
+  <div id="hero-view" class="three-view" role="img" aria-label="实际带孔搅拌槽的三维几何与速度场快照，可拖动旋转"></div>
+  <div class="hero-stamp"><span class="stamp-icon"><svg><use href="#i-cube"/></svg></span><div><b>结构，进入计算。</b><small>带孔梯形叶片 · 实际 CAD / 流场快照</small></div></div>
+  <span class="visual-hint">拖动旋转 · 滚轮缩放</span>
+ </div>
+</section>
+<div class="process-strip wrap" aria-label="产品流程">
+ <a href="#geometry"><span>01</span><div><b>表达几何</b><small>自然语言 / 参数化模板</small></div><svg><use href="#i-arrow"/></svg></a>
+ <a href="#grid"><span>02</span><div><b>构建网格</b><small>格子、边界与运动一体生成</small></div><svg><use href="#i-arrow"/></svg></a>
+ <a href="#simulation"><span>03</span><div><b>探索物理</b><small>内置模型 / 真实结果</small></div><svg><use href="#i-arrow"/></svg></a>
+</div>
+
+<section class="section geometry-section" id="geometry">
+ <div class="wrap">
+  <div class="section-heading"><div><p class="eyebrow"><span class="chapter">01</span> GEOMETRY</p><h2>你描述结构，<br>AI 组织几何。</h2></div><p>自由设计内部结构，也可以从成熟反应器出发。<br>同一条流程，连接自然语言与参数化建模。</p></div>
+  <div class="geometry-workbench">
+   <div class="geometry-editor">
+    <div class="tabs" role="tablist" aria-label="几何建模方式"><button class="active" role="tab" aria-selected="true" id="tab-free" aria-controls="panel-free">语言驱动建模</button><button role="tab" aria-selected="false" id="tab-template" aria-controls="panel-template">参数化反应器</button></div>
+    <div class="editor-panel" id="panel-free" role="tabpanel" aria-labelledby="tab-free">
+     <div class="mini-label"><span class="spark">✳</span> 建模需求 <span class="muted-tag">已生成示例</span></div>
+     <p class="prompt" id="model-prompt">构建一个直径 150 mm 的搅拌槽，使用六片梯形叶片，每片开一个 4 mm 贯穿孔，保留四块挡板。</p>
+     <div class="preset-buttons" aria-label="设计示例"><button class="active" data-preset="perforated">带孔梯形桨 <span>↗</span></button><button data-preset="filled">实心梯形桨 <span>↗</span></button></div>
+     <div class="generation-steps"><span><svg><use href="#i-check"/></svg> 轮廓拉伸</span><span><svg><use href="#i-check"/></svg> 实体构造</span><span><svg><use href="#i-check"/></svg> STL 导出</span></div>
+     <div class="output-row"><div><small>模型输出</small><b>14 个零件 <span>·</span> STL / STEP</b></div><a id="stl-download" class="button small dark" href="assets/perforated-reactor.zip" download>下载 STL 包 <svg><use href="#i-download"/></svg></a></div>
+     <p class="fine-print">示例由程序化 CAD 实际生成。新的设计需求可交给建模工具，保留源码与参数，持续修改。</p>
+    </div>
+    <div class="editor-panel" id="panel-template" role="tabpanel" aria-labelledby="tab-template" hidden>
+     <div class="mini-label">圆柱搅拌槽模板 <span class="muted-tag">参数预览</span></div>
+     <div class="parameter-fields">
+      <label>槽径 <span><output id="tank-out">150</output> mm</span><input id="tank" type="range" min="100" max="300" step="10" value="150"></label>
+      <label>桨径 <span><output id="diameter-out">50</output> mm</span><input id="diameter" type="range" min="30" max="90" step="5" value="50"></label>
+      <label>离底高度 <span><output id="clearance-out">50</output> mm</span><input id="clearance" type="range" min="20" max="120" step="5" value="50"></label>
+      <div class="parameter-selects"><label>桨层数<select id="layers"><option value="1">单层桨</option><option value="2">双层桨</option></select></label><label>每层叶片<select id="blades"><option value="4">4 片</option><option value="6" selected>6 片</option><option value="8">8 片</option></select></label></div>
+     </div>
+     <p class="template-detail">等高槽体 · 四块挡板 · 双层时对称布置</p>
+     <div class="parameter-status" id="parameter-status"><svg><use href="#i-check"/></svg> 基础几何检查通过</div>
+     <button class="button small dark" id="export-parameters">导出设计参数 <svg><use href="#i-download"/></svg></button>
+     <p class="fine-print">修改参数会更新几何预览；网格与结果区展示的是已计算示例。</p>
+    </div>
+   </div>
+   <div class="geometry-view-panel">
+    <div class="view-toolbar"><span id="geometry-title">带孔梯形桨 / STL 预览</span><div class="segmented small"><button class="active" id="solid-view">实体</button><button id="wire-view">三角面</button></div></div>
+    <div id="geometry-view" class="three-view" role="img" aria-label="可切换设计和参数的反应器几何预览"></div>
+    <div class="geometry-view-bottom"><span><i class="orange-dot"></i> <span id="geometry-caption">真实 STL · 贯穿孔保留为流体区域</span></span><button class="icon-button reset-view" data-view="geometry" aria-label="重置几何视角"><svg><use href="#i-rotate"/></svg></button></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="section grid-section wrap" id="grid">
+ <div class="section-heading"><div><p class="eyebrow"><span class="chapter">02</span> DISCRETIZATION</p><h2>结构有了形状，<br>计算有了格子。</h2></div><p>从拓扑和尺寸生成规则格子，识别固体与流体，<br>把运动边界交给浸没边界方法。</p></div>
+ <div class="grid-layout">
+  <div class="grid-view-panel">
+   <div class="view-toolbar"><span><svg><use href="#i-grid"/></svg> 实际 LBM 网格</span><div class="segmented small"><button class="active" id="grid-slice-mode">格点切片</button><button id="grid-volume-mode">三维格点</button></div></div>
+   <div class="grid-canvas-wrap"><canvas id="grid-canvas" aria-label="真实计算网格切片，展示流体格点、固体边界与 IBM 节点"></canvas><div id="grid-volume-view" class="three-view" hidden></div><div class="grid-coordinate" id="grid-coordinate">XY · z = 50.0 mm</div><div class="grid-scale">Δx = 0.625 mm</div><div class="loading-note" id="grid-loading">载入实际格点数据…</div></div>
+   <div class="grid-controls"><div class="segmented small"><button class="active" data-plane="xy">水平 XY</button><button data-plane="xz">纵向 XZ</button></div><label class="slice-slider"><span id="slice-label">高度</span><input id="grid-slice" type="range" min="1" max="239" step="1" value="80"><output id="slice-output">50.0 mm</output></label><button class="text-button" id="grid-zoom">桨叶局部 ↗</button></div>
+  </div>
+  <aside class="grid-info">
+   <div class="grid-big-number">0.625<small>mm / 格距</small></div>
+   <p>同一份几何，连接三种表达。</p>
+   <div class="grid-layers"><label><input type="checkbox" id="show-lattice" checked><span class="legend-dot fluid"></span><div><b>流体格点</b><small>规则笛卡尔体网格</small></div></label><label><input type="checkbox" id="show-solids" checked><span class="legend-dot solid"></span><div><b>固体区域</b><small>基于真实 STL 内外判断</small></div></label><label><input type="checkbox" id="show-ibm" checked><span class="legend-dot ibm"></span><div><b>IBM 表面节点</b><small>运动与作用力的连接点</small></div></label></div>
+   <div class="grid-specs"><div><span>槽径方向</span><b>240 格距</b></div><div><span>三维存储网格</span><b>243 × 250 × 250</b></div><div><span>表面节点</span><b id="ibm-count">218,438</b></div></div>
+   <p class="fine-print" id="grid-source-note">带孔桨实际网格 · t = 0.00449 s。切片展示原始格距，三维视图采用抽样显示。</p>
+  </aside>
+ </div>
+</section>
+
+<section class="simulation-section" id="simulation">
+ <div class="wrap">
+  <div class="section-heading light"><div><p class="eyebrow"><span class="chapter">03</span> SIMULATION</p><h2>看见流动，<br>也看见结构的作用。</h2></div><p>用内置求解器推进真实物理。<br>从流体静止，到叶片驱动、射流与上下循环。</p></div>
+  <div class="simulation-workbench">
+   <div class="simulation-toolbar"><div class="segmented on-dark"><button class="active" data-result="startup">基准槽启动回放</button><button data-result="cad">新拓扑计算快照</button></div><span class="real-data-badge"><i></i> 实际计算数据</span></div>
+   <div class="simulation-body"><div class="simulation-stage"><div id="simulation-view" class="three-view" role="img" aria-label="原生搅拌流场在三维结构上的真实切片回放"></div><div class="simulation-stage-info"><span id="simulation-case-title">六叶搅拌槽 · 从静止启动</span><b id="simulation-time">t = 0.00000 s</b></div><div class="color-legend"><span>速率 / m·s⁻¹</span><i></i><div><span>0</span><span>6</span><span>12+</span></div></div><span class="simulation-hint">拖动旋转，查看两个相交切面</span><div class="loading-note" id="result-loading">载入真实流场记录…</div></div>
+    <aside class="simulation-insights"><p class="mini-label">CASE STUDY / 搅拌槽</p><h3>叶片提供动力，<br>流场响应结构。</h3><p id="result-description">回放从零速度初始条件开始的原生计算记录，观察桨区流动与槽内循环的形成。</p><dl><div><dt>槽径 / 液高</dt><dd>150 / 150 mm</dd></div><div><dt>桨径 / 转速</dt><dd>50 mm / 2672 rpm</dd></div><div><dt>流动模型</dt><dd>Coherent LES · IBM</dd></div><div><dt id="result-scope-label">记录范围</dt><dd id="result-scope">0 → 60 圈</dd></div></dl><button class="text-button on-dark-text" id="show-result-notes">关于这组结果 <svg><use href="#i-up"/></svg></button></aside>
+   </div>
+   <div class="playback"><button id="playback-toggle" class="playback-button" aria-label="播放流场回放"><svg><use href="#i-play"/></svg></button><span class="playback-label" id="playback-label">逐帧回放</span><input id="time-slider" type="range" min="0" max="27" step="1" value="0" aria-label="回放时间"><span id="rotation-label">0.0 转</span><button id="playback-reset" class="icon-button" aria-label="回到初始静止帧"><svg><use href="#i-rotate"/></svg></button></div>
+  </div>
+  <div class="simulation-footnote"><span>速度场来自原始计算输出，网页负责回放与观察。</span><span>新拓扑算例已通过几何一致性、均匀浓度与守恒检查。</span></div>
+ </div>
+</section>
+
+<section class="section solvers-section wrap" id="solvers">
+ <div class="section-heading"><div><p class="eyebrow"><span class="chapter">＋</span> MODEL LIBRARY</p><h2>不止一种流动，<br>不止一个求解器。</h2></div><div class="model-count"><strong>13<span>类</span></strong><p>模型模块<br>持续扩展的物理能力</p></div></div>
+ <p class="solver-intro">流动、界面、传热、传质与反应。在同一个模型库里，选择适合问题的数值模型与边界组合。</p>
+ <div class="gallery-top"><div class="filter-tabs" role="tablist" aria-label="按物理过程筛选"><button class="active" data-filter="all" aria-selected="true">全部算例</button><button data-filter="flow" aria-selected="false">流动</button><button data-filter="heat" aria-selected="false">传热与相变</button><button data-filter="interface" aria-selected="false">界面与传质</button><button data-filter="reaction" aria-selected="false">反应</button></div><button class="text-button" id="model-directory">完整模型目录 <svg><use href="#i-up"/></svg></button></div>
+ <div class="case-gallery" id="case-gallery"></div>
+ <p class="fine-print gallery-note">以上为已有求解器的实际数值算例。各模型有独立的适用与验证范围，跨物理组合需相应的耦合接口。</p>
+</section>
+
+<section class="closing-section wrap"><div><p class="eyebrow">IDEAS IN. INSIGHT OUT.</p><h2>从你的下一个<br>真实结构开始。</h2><p>把几何、网格和物理，放进同一次思考。</p></div><div><a href="#geometry" class="button primary">体验建模流程 <svg><use href="#i-arrow"/></svg></a><a href="assets/perforated-reactor.zip" download class="text-link">下载完整几何示例 <svg><use href="#i-download"/></svg></a></div></section>
+</main>
+<footer class="footer wrap"><a class="footer-brand" href="#top">格流 LBM <span>· GOBEYOND</span></a><span>从结构想象，到流动洞见。</span><button class="text-button" id="data-notes">数据与能力说明</button><small>© 2026 GoBeyond</small></footer>
+<dialog id="detail-dialog" aria-labelledby="dialog-title"><button class="dialog-close icon-button" aria-label="关闭详情"><svg><use href="#i-close"/></svg></button><div id="dialog-content"></div></dialog>
+<div class="toast" id="toast" role="status"></div>
+</body>
+</html>

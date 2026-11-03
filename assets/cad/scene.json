@@ -1,0 +1,467 @@
+{
+  "schema": "cad-stl-scene-v1",
+  "units": "mm",
+  "bounds": [
+    [
+      -80.0,
+      -80.0,
+      -5.0
+    ],
+    [
+      80.0,
+      80.0,
+      155.0
+    ]
+  ],
+  "resolution": 64,
+  "parts": [
+    {
+      "name": "vessel",
+      "file": "vessel.stl",
+      "role": "container",
+      "material": 2,
+      "group": "vessel",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          0
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "shaft",
+      "file": "shaft.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "disc_0",
+      "file": "disc_0.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "hub_0",
+      "file": "hub_0.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "blade_0_0",
+      "file": "blade_0_0.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "blade_0_1",
+      "file": "blade_0_1.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "blade_0_2",
+      "file": "blade_0_2.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "blade_0_3",
+      "file": "blade_0_3.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "blade_0_4",
+      "file": "blade_0_4.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "blade_0_5",
+      "file": "blade_0_5.stl",
+      "role": "solid",
+      "material": 1,
+      "group": "rotor",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          279.81118567973095
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "baffle_0",
+      "file": "baffle_0.stl",
+      "role": "solid",
+      "material": 3,
+      "group": "baffles",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          0
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "baffle_1",
+      "file": "baffle_1.stl",
+      "role": "solid",
+      "material": 3,
+      "group": "baffles",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          0
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "baffle_2",
+      "file": "baffle_2.stl",
+      "role": "solid",
+      "material": 3,
+      "group": "baffles",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          0
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "baffle_3",
+      "file": "baffle_3.stl",
+      "role": "solid",
+      "material": 3,
+      "group": "baffles",
+      "motion": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "omega": [
+          0,
+          0,
+          0
+        ],
+        "translation_velocity": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "native014": {
+    "tank_diameter_m": 0.15,
+    "liquid_height_m": 0.15,
+    "shaft_radius_m": 0.004,
+    "impeller_diameter_m": 0.05,
+    "impeller_levels_m": [
+      0.05
+    ],
+    "blade_count": 6,
+    "blade_phase_deg": -30.0,
+    "baffle_count": 4,
+    "baffle_width_m": 0.015,
+    "baffle_thickness_m": 0.002,
+    "baffle_wall_gap_m": 0.0025,
+    "rpm": 2672.0
+  },
+  "geometry_features": {
+    "blade_profile": "trapezoid",
+    "hole_diameter_mm": 4.0,
+    "expected_blade_euler_number": 0,
+    "verification_points": [
+      {
+        "part": "blade_0_0",
+        "hole_center_mm": [
+          18.944305707784597,
+          -10.937499999999998,
+          50.0
+        ],
+        "solid_neighbor_mm": [
+          18.944305707784597,
+          -10.937499999999998,
+          53.25
+        ],
+        "hole_radius_mm": 2.0
+      },
+      {
+        "part": "blade_0_1",
+        "hole_center_mm": [
+          18.944305707784597,
+          10.937499999999998,
+          50.0
+        ],
+        "solid_neighbor_mm": [
+          18.944305707784597,
+          10.937499999999998,
+          53.25
+        ],
+        "hole_radius_mm": 2.0
+      },
+      {
+        "part": "blade_0_2",
+        "hole_center_mm": [
+          1.3394574365674177e-15,
+          21.875,
+          50.0
+        ],
+        "solid_neighbor_mm": [
+          1.3394574365674177e-15,
+          21.875,
+          53.25
+        ],
+        "hole_radius_mm": 2.0
+      },
+      {
+        "part": "blade_0_3",
+        "hole_center_mm": [
+          -18.944305707784597,
+          10.937499999999998,
+          50.0
+        ],
+        "solid_neighbor_mm": [
+          -18.944305707784597,
+          10.937499999999998,
+          53.25
+        ],
+        "hole_radius_mm": 2.0
+      },
+      {
+        "part": "blade_0_4",
+        "hole_center_mm": [
+          -18.944305707784594,
+          -10.937500000000002,
+          50.0
+        ],
+        "solid_neighbor_mm": [
+          -18.944305707784594,
+          -10.937500000000002,
+          53.25
+        ],
+        "hole_radius_mm": 2.0
+      },
+      {
+        "part": "blade_0_5",
+        "hole_center_mm": [
+          -4.0183723097022526e-15,
+          -21.875,
+          50.0
+        ],
+        "solid_neighbor_mm": [
+          -4.0183723097022526e-15,
+          -21.875,
+          53.25
+        ],
+        "hole_radius_mm": 2.0
+      }
+    ]
+  },
+  "container_boundary": {
+    "side": "IBM no slip",
+    "bottom": "native no slip",
+    "top": "native free slip"
+  }
+}

@@ -1,0 +1,149 @@
+[
+  {
+    "id": "mass-transfer",
+    "module": "009_gas_liquid_mass_transfer",
+    "file": "mass-transfer.gif",
+    "origin": "Existing solver numerical output",
+    "status": {
+      "id": "009_gas_liquid_mass_transfer",
+      "status": "completed_with_documented_limits",
+      "production_backend": "CUDA FP64 only",
+      "solver_implemented": true,
+      "validation_run": true,
+      "coupled_to_008": true,
+      "coupling_scope": "one-way dilute species transport; no shrinkage feedback",
+      "case_count": 29,
+      "check_count": 227,
+      "passed_count": 227,
+      "primary_model_doi": "10.1016/j.ces.2019.01.021",
+      "context_reference_doi": "10.1016/j.ces.2022.117539",
+      "server_path": "/home/user/data/gobeyond/demo/Replication-literature/009_gas_liquid_mass_transfer",
+      "required_input": null
+    }
+  },
+  {
+    "id": "reactive-flow",
+    "module": "010_reactive_flow",
+    "file": "reactive-flow.gif",
+    "origin": "Existing solver numerical output",
+    "status": {
+      "id": "010_reactive_flow",
+      "status": "010_A_B_completed_with_documented_limits",
+      "production_backend": "CUDA FP64 only",
+      "solver_implemented": true,
+      "validation_run": true,
+      "case_count": 23,
+      "check_count": 189,
+      "passed_count": 189,
+      "stage_010_A": true,
+      "stage_010_B": true,
+      "stage_010_C": false,
+      "coupled_to_007_thermal": false,
+      "coupled_to_008_009": false,
+      "server_path": "/home/user/data/gobeyond/demo/Replication-literature/010_reactive_flow",
+      "required_input": null
+    }
+  },
+  {
+    "id": "heat-exchange",
+    "module": "007_conjugate_heat_transfer",
+    "file": "heat-exchange.gif",
+    "origin": "Existing solver numerical output",
+    "status": {
+      "id": "007_conjugate_heat_transfer",
+      "status": "validated_model_demo",
+      "implementation_started": true,
+      "validation_executed": true,
+      "production_backend": "CUDA FP64 only",
+      "primary_doi": "10.1103/PhysRevE.89.043308",
+      "primary_pdf": "papers/PhysRevE.89.043308.pdf",
+      "gpu_cases": 22,
+      "checks": 324,
+      "passed_checks": 324,
+      "full_paper_reproduction": false,
+      "interface_scope": "stationary, axis-aligned, halfway",
+      "report": "REPORT.md",
+      "source_sha256": {
+        "src/main.cu": "d5b5aa8082bde2a7035a7beea57737161dda5d93da88c1de2aeecbca0ca87d8c",
+        "src/model.cuh": "c66595649126193012a15f8e79bfe9a68c26dc5882ec7c6c7cdb9dfa48b786ca"
+      }
+    }
+  },
+  {
+    "id": "phase-change",
+    "module": "005_enthalpy_phase_change",
+    "file": "phase-change.gif",
+    "origin": "Existing solver numerical output",
+    "status": {
+      "status": "model_demo_delivered",
+      "validation_passed": true,
+      "checks": 183,
+      "gpu_cases": 29,
+      "cpu_gpu_pairs": 11,
+      "backend": "CPU C++17 + CUDA FP64",
+      "model": "D3Q7 total enthalpy SRT/MRT",
+      "flow_coupling": false,
+      "paper_figure_replication": false,
+      "running_jobs": 0
+    }
+  },
+  {
+    "id": "particles",
+    "module": "006_moving_particles",
+    "file": "particles.gif",
+    "origin": "Existing solver numerical output",
+    "status": {
+      "id": "006_moving_particles",
+      "status": "validated_model_demo",
+      "production_backend": "CUDA FP64 only",
+      "gpu_cases": 13,
+      "checks": 149,
+      "passed_checks": 149,
+      "full_paper_reproduction": false,
+      "independent_reference": "NumPy short-run validation only",
+      "report": "REPORT.md",
+      "source_sha256": {
+        "src/main.cu": "f1f72f9b88a2faffa419e516bc2f13a09da70e0230b14cb3a99e5c72f94934a9",
+        "src/model.cuh": "fb20e6191c9e6cd820d45f0eaa48face49b3c16212b54c4295b7f5cd0cc7d39f"
+      }
+    }
+  },
+  {
+    "id": "non-newtonian",
+    "module": "004_non_newtonian",
+    "file": "non-newtonian.png",
+    "origin": "Existing solver numerical output",
+    "status": {
+      "status": "validated_model_demo",
+      "cases": 25,
+      "steady_cases": 24,
+      "checks_passed": 168,
+      "checks_total": 168,
+      "backend": "CUDA FP64",
+      "primary_reference_velocity_L2": 0.0003960427465337306,
+      "scope": "Generalized Newtonian truncated power-law, D3Q19; paper Fig.1 continuum parameters and analytical family, not original algorithm or all figures.",
+      "not_a_unified_solver": true
+    }
+  },
+  {
+    "id": "reactive-topology",
+    "module": "002_reactive_transport_2014",
+    "file": "reactive-topology.gif",
+    "origin": "Existing solver numerical output",
+    "status": {
+      "status": "model_demo_delivered",
+      "paper_figure_replication": false,
+      "validation_passed": true,
+      "checks": 15,
+      "application_cases": 3,
+      "backend": "CPU C++17 FP64 + CUDA FP64",
+      "future_core": "Design and registry provided; numerical implementations still independent",
+      "running_jobs": 0,
+      "gpu_validation_passed": true,
+      "gpu_checks": 123,
+      "gpu_case_pairs": 15,
+      "gpu_unit_fixtures": 4,
+      "gpu_report": "GPU_REPORT.md"
+    }
+  }
+]
