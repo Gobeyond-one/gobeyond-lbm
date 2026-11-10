@@ -12,3 +12,39 @@
 @media(max-width:500px){.simulation-toolbar .segmented{width:100%}.simulation-toolbar .segmented button{flex:1;padding:9px 6px;font-size:10px}.cloud-controls{gap:12px 15px;font-size:10px}.cloud-opacity{margin-left:0}.cloud-opacity input{width:75px}.simulation-stage{height:430px}.simulation-stage-info b{font-size:18px}.simulation-hint{max-width:53%;font-size:8px}.color-legend{width:100px}.simulation-insights{padding:21px 18px}.simulation-insights dd{font-size:10px}.simulation-insights dt{font-size:8px}}
 
 .cloud-controls select{border:1px solid #45616b;background:#17343e;color:#d0e1d5;border-radius:4px;padding:4px;font-size:10px}.cloud-controls select:focus-visible{outline:2px solid #ed6b38}
+
+/* Synchronized speed/concentration slices and the measured CV timeline. */
+.mixing-controls[hidden],.mixing-pair[hidden],.mix-progress[hidden]{display:none}
+.mixing-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:11px 19px;border-bottom:1px solid #3c5d664f;background:#142e38}
+.mixing-jumps{display:flex;gap:6px;flex-wrap:wrap}
+.mixing-jumps button{padding:6px 9px;border-radius:5px;border:1px solid #42616a;background:transparent;color:#cadbd2;font-size:10px}
+.mixing-jumps button:hover{background:#234450}
+.simulation-stage.mixing-paired{height:auto;display:flex;flex-direction:column;padding:20px;min-height:0}
+.mixing-paired .three-view{visibility:hidden}
+.mixing-paired .simulation-stage-info{position:static;order:-1;margin-bottom:15px}
+.mixing-paired .color-legend,.mixing-paired .simulation-hint{display:none}
+.mixing-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;margin:auto 0}
+.mix-panel{margin:0;min-width:0;overflow:hidden;border:1px solid #42616a88;border-radius:9px;background:#102832}
+.mix-panel figcaption{display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px 10px;padding:9px 10px;font-size:10px;color:#bed1c6}
+.mix-panel strong{font-weight:550;color:#e4efe5;font-size:12px}
+.mix-panel canvas{width:100%;height:auto;display:block}
+.mix-scale{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:6px 10px 8px;color:#c3d7ce;font-size:9px}
+.mix-scale i{grid-column:1/-1;height:5px;border-radius:3px}
+.mix-scale.speed i{background:linear-gradient(90deg,#112943,#237a97,#70cfba,#fece73)}
+.mix-scale.tracer i{background:linear-gradient(90deg,#1b4166,#64accb,#eaf4e3,#ef9257,#a13027)}
+.mix-scale span:nth-of-type(2){text-align:center}.mix-scale span:last-child{text-align:right}
+.mix-caption{grid-column:1/-1;margin:0;font-size:10px;line-height:1.6;color:#a0b9b1}
+.mix-progress{margin:8px 0 12px;min-width:0}
+.mix-progress p{margin:0;display:flex;justify-content:space-between;gap:4px;font-size:10px;color:#a9c1b8}
+.mix-progress strong{color:#e0eee5;font-weight:550}
+.mix-progress svg{display:block;width:100%;height:auto;fill:none;stroke:none;max-height:132px}
+.mix-progress svg text{fill:#a8c2b8;font:9px system-ui,sans-serif}
+.mix-progress small{color:#a9c1b8;font-size:9px}
+.mix-gridline{stroke:#40616a;stroke-width:.65}
+.mix-curve{stroke:#f0a46e;stroke-width:1.8;stroke-linejoin:round}
+.mix-graph-cursor{stroke:#c9e5d6;stroke-width:1;stroke-dasharray:2 3}
+.mix-graph-dot{fill:#ffb178;stroke:#102832;stroke-width:1}
+@media(max-width:800px){.mix-progress{grid-column:1/-1;margin-top:15px}}
+@media(max-width:500px){.simulation-stage.mixing-paired{padding:14px}.mixing-controls{padding:10px 12px}.mixing-pair{gap:7px}.mix-panel figcaption{padding:7px 6px}.mix-panel strong{font-size:10px}.mix-scale{padding:4px 6px 6px;font-size:8px}.mix-caption{font-size:9px}}
+.mix-contrast{display:flex;align-items:center;gap:5px;color:#cadbd2;font-size:10px}
+.mix-contrast[hidden]{display:none}.mix-contrast input{margin:0}

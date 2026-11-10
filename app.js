@@ -1,5 +1,6 @@
 import {ReactorView} from './scene.js?v=20261103-cloud';
 import {FieldCloud} from './pointcloud.js?v=20261103-cloud';
+import {MixingReplay} from './mixing.js?v=20261110-mixing';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const icon=id=>`<svg aria-hidden="true"><use href="#i-${id}"/></svg>`;
@@ -56,18 +57,43 @@ $('#grid-slice-mode').addEventListener('click',()=>setGridMode(false));$('#grid-
 // Saved volume fields in fixed tank coordinates. Continuous looping is display only.
 const simulation=new ReactorView('simulation-view',{dark:true});simulation.template({phase:0});simulation.addPlanes();
 if(simulation.planeGroup)simulation.planeGroup.visible=false;
-let resultType='startup',cloudMeta,cloud,qBuffer,vectorBuffer,startupMeta,startupBuffer;
+let resultType='startup',mixView='paired',mixing,cloudMeta,cloud,qBuffer,speedBuffer,vectorBuffer,startupMeta,startupBuffer;
 let frame=0,playing=false,resultVisible=false,loaded=false,phase=0,cycles=0,requestId=0;
 let cloudPromise,startupPromise;
-function loadCloud(){return cloudPromise??=Promise.all([json('assets/cloud.json'),binary('assets/cloud-positions.bin'),binary('assets/cloud-arrow-positions.bin'),binary('assets/cloud-concentration.bin'),binary('assets/cloud-vectors.bin')]).then(([meta,positions,arrows,q,vectors])=>{
-  if(positions.byteLength!==meta.point_count*12||q.byteLength!==meta.frames.length*meta.point_count*2||vectors.byteLength!==meta.frames.length*meta.arrow_count*6)throw Error('三维数据长度检查失败');
-  cloudMeta=meta;qBuffer=q;vectorBuffer=vectors;
+function loadCloud(){return cloudPromise??=Promise.all([json('assets/cloud.json'),binary('assets/cloud-positions.bin'),binary('assets/cloud-arrow-positions.bin'),binary('assets/cloud-concentration.bin'),binary('assets/cloud-vectors.bin'),binary('assets/cloud-speed.bin')]).then(([meta,positions,arrows,q,vectors,speed])=>{
+  if(positions.byteLength!==meta.point_count*12||q.byteLength!==meta.frames.length*meta.point_count*2||speed.byteLength!==q.byteLength||arrows.byteLength!==meta.arrow_count*12||vectors.byteLength!==meta.frames.length*meta.arrow_count*6)throw Error('三维数据长度检查失败');
+  cloudMeta=meta;qBuffer=q;speedBuffer=speed;vectorBuffer=vectors;
+  mixing=new MixingReplay(meta,new Float32Array(positions),new Float32Array(arrows));
   if(!simulation.failed){cloud=new FieldCloud(simulation,meta,new Float32Array(positions),new Float32Array(arrows));cloud.group.visible=false;}
   return meta;
 });}
 function loadStartup(){return startupPromise??=Promise.all([json('assets/startup.json'),binary('assets/startup.bin')]).then(([meta,buffer])=>{startupMeta=meta;startupBuffer=buffer;});}
 function cloudStyle(){cloud?.setStyle({opacity:Number($('#cloud-opacity').value),cutaway:$('#cloud-cutaway').checked,arrows:$('#cloud-arrows').checked,deviation:$('#cloud-deviation').checked,speedMax:12});}
 for(const id of ['cloud-opacity','cloud-cutaway','cloud-arrows','cloud-deviation'])$(`#${id}`).addEventListener('input',()=>{cloudStyle();displayFrame();});
+function syncMixingView(){
+  const concentration=resultType==='concentration',paired=concentration&&mixView==='paired';
+  $('#mixing-controls').hidden=!concentration;
+  $('#mix-progress').hidden=!concentration;
+  $('#mixing-pair').hidden=!paired;
+  $('#mix-contrast-control').hidden=!paired;
+  $('#cloud-controls').hidden=resultType==='startup'||paired;
+  $('.simulation-stage').classList.toggle('mixing-paired',paired);
+  for(const button of $$('[data-mix-view]')){
+    const yes=button.dataset.mixView===mixView;
+    button.classList.toggle('active',yes);button.setAttribute('aria-pressed',String(yes));
+  }
+  if(cloud)cloud.group.visible=concentration&&!paired;
+}
+$$('[data-mix-view]').forEach(button=>button.addEventListener('click',()=>{
+  mixView=button.dataset.mixView;syncMixingView();displayFrame();
+}));
+$$('[data-mix-jump]').forEach(button=>button.addEventListener('click',()=>{
+  if(!loaded||resultType!=='concentration')return;
+  const target=Number(button.dataset.mixJump);
+  $('#mix-contrast').checked=target===cloudMeta.frames.length-1;
+  setPlaying(false);phase=target/(cloudMeta.frames.length-1);displayFrame();
+}));
+$('#mix-contrast').addEventListener('change',displayFrame);
 function setPlaying(value){playing=!!value&&loaded;$('#playback-toggle').innerHTML=icon(playing?'pause':'play');$('#playback-toggle').setAttribute('aria-label',playing?'暂停流场回放':'播放流场回放');$('#playback-label').textContent=playing?'循环播放':'已暂停 · 可循环';}
 function displayFrame(){
   if(!loaded)return;
@@ -78,7 +104,14 @@ function displayFrame(){
   }else{
     const cursor=phase*(cloudMeta.frames.length-1),lo=Math.floor(cursor),hi=Math.min(lo+1,cloudMeta.frames.length-1),blend=cursor-lo;
     frame=lo;const a=cloudMeta.frames[lo],b=cloudMeta.frames[hi],step=a.step+(b.step-a.step)*blend,time=a.time_s+(b.time_s-a.time_s)*blend,tracer=a.tracer_time_s+(b.tracer_time_s-a.tracer_time_s)*blend;
-    cloud?.update(qBuffer,vectorBuffer,lo,hi,blend);simulation.setAngle(step*a.omega_lu);
+    if(mixView==='paired'){
+      const contrast=$('#mix-contrast').checked;
+      mixing?.draw(qBuffer,speedBuffer,vectorBuffer,lo,hi,blend,contrast);
+      $('#mix-tracer-low').textContent=contrast?'≤0.8':'0';
+      $('#mix-tracer-high').textContent=contrast?'≥1.2':'≥2';
+    }
+    else {cloud?.update(qBuffer,vectorBuffer,lo,hi,blend);simulation.setAngle(step*a.omega_lu);}
+    mixing?.mark(a);
     $('#simulation-time').textContent=resultType==='concentration'?`释放后 ${tracer.toFixed(4)} s`:`开机后 ${time.toFixed(4)} s`;
     $('#simulation-clock').textContent=`${resultType==='concentration'?`开机后 ${time.toFixed(4)} s · `:''}实算帧 ${lo+1} / ${cloudMeta.frames.length} · 显示插值`;
     $('#rotation-label').textContent=`${(step*a.omega_lu/(2*Math.PI)).toFixed(1)} 转`;
@@ -88,13 +121,14 @@ function displayFrame(){
 }
 async function selectResult(type){
   const ticket=++requestId;resultType=type;loaded=false;phase=0;cycles=0;setPlaying(false);
+  $('#mix-contrast').checked=false;
   const concentration=type==='concentration',startup=type==='startup';active($$('[data-result]'),$(`[data-result="${type}"]`));$$('[data-result]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.result===type)));
   $('#result-loading').hidden=false;$('#result-loading').textContent=concentration?'载入搅拌与扩散体积场…':startup?'载入静止启动记录…':'载入真实三维流场…';$('#playback-toggle').disabled=true;$('#time-slider').disabled=true;
-  $('#cloud-controls').hidden=startup;$('#simulation-legend').classList.toggle('concentration',concentration);
+  syncMixingView();$('#simulation-legend').classList.toggle('concentration',concentration);
   $('#legend-title').textContent=concentration?'相对浓度 C / C∞':'速率 / m·s⁻¹';$('#legend-mid').textContent=concentration?'1':'6';$('#legend-high').textContent=concentration?'≥2':'12+';
   $('#simulation-case-title').textContent=startup?'六叶搅拌槽 · 流体从静止启动':concentration?'六叶搅拌槽 · 示踪剂对流与扩散':'六叶搅拌槽 · 三维速度场';
   $('#simulation-heading').innerHTML=concentration?'随流动展开，<br>在扩散中混合。':'叶片提供动力，<br>流场响应结构。';
-  $('#result-description').textContent=concentration?'相同物性的示踪剂耦合对流、分子扩散与湍流扩散。分子扩散系数 10⁻⁹ m²/s，湍流 Schmidt 数 0.7。':startup?'流体以零速度开始，搅拌桨按给定转速启动。这组记录保留两个真实速度切片，供观察启动过程。':'颜色表示固定空间采样位置的速率，箭头表示实际速度方向。旋转查看桨区射流和槽内上下循环。';
+  $('#result-description').textContent=concentration?'先看速度和箭头，找出桨区射流与槽内循环，再对照示踪剂如何铺开。色标中央的 1 表示均匀混合时的浓度。':startup?'流体以零速度开始，搅拌桨按给定转速启动。这组记录保留两个真实速度切片，供观察启动过程。':'颜色表示固定空间采样位置的速率，箭头表示实际速度方向。旋转查看桨区射流和槽内上下循环。';
   $('#result-scope').textContent=startup?'静止 → 60 转 · 28 帧':concentration?'释放后 0–0.8982 s · 81 帧':'60 转预热后 · 81 帧体积场';
   $('#result-metric-label').textContent=concentration?'全槽 CV（实算帧）':startup?'流体初始速度':'三维采样点';$('#result-metric').textContent=startup?'0 m/s':'30,720';
   $('#simulation-hint').textContent=startup?'拖动旋转 · 静止启动的两个实际切片':'拖动旋转 · 固定空间的体积采样点';
@@ -102,7 +136,7 @@ async function selectResult(type){
   try{
     if(startup)await loadStartup();else await loadCloud();
     if(ticket!==requestId)return;
-    if(cloud){cloud.group.visible=!startup;cloud.setMode(concentration);cloudStyle();}
+    if(cloud){cloud.setMode(concentration);cloudStyle();}syncMixingView();
     if(simulation.planeGroup)simulation.planeGroup.visible=startup;
     simulation.template({phase:startup?-30:0});loaded=true;$('#result-loading').hidden=true;$('#playback-toggle').disabled=false;$('#time-slider').disabled=false;
     displayFrame();setPlaying(!reduced);
@@ -112,14 +146,14 @@ $$('[data-result]').forEach(b=>b.addEventListener('click',()=>selectResult(b.dat
 $('#playback-toggle').addEventListener('click',()=>{if(!loaded)return;if(phase>=1)phase=0;setPlaying(!playing);displayFrame();});
 $('#time-slider').addEventListener('input',()=>{setPlaying(false);phase=Number($('#time-slider').value)/1000;displayFrame();});
 $('#playback-reset').addEventListener('click',()=>{phase=0;cycles=0;setPlaying(false);displayFrame();});
-new IntersectionObserver(es=>{resultVisible=es[0].isIntersecting;},{threshold:.15}).observe($('#simulation-view'));
+new IntersectionObserver(es=>{resultVisible=es[0].isIntersecting;},{threshold:.15}).observe($('.simulation-stage'));
 let previousPlayback=0,lastDisplay=0;
 function advance(t){
   const dt=previousPlayback?Math.min(.1,(t-previousPlayback)/1000):0;previousPlayback=t;
   if(playing&&resultVisible&&loaded&&!document.hidden){phase+=dt/(resultType==='startup'?8:14);if(phase>=1){cycles+=Math.floor(phase);phase%=1;}if(t-lastDisplay>30){lastDisplay=t;displayFrame();}}
   requestAnimationFrame(advance);
 }
-requestAnimationFrame(advance);selectResult('startup');
+requestAnimationFrame(advance);selectResult(new URLSearchParams(location.search).get('view')==='mixing'?'concentration':'startup');
 
 const cases=[
  {id:'ali2024-wake',module:'ALI 2024',name:'交错双方柱绕流',category:'flow',file:'ali2024-wake.webp',animated:true,tags:['Re = 200','G = 6','D2Q9/BGK'],description:'看两根交错方柱如何交替脱涡，在下游形成两条分离的卡门涡街。',method:'D2Q9/BGK · 640 × 560 格点 · 交错角 45°',scope:'从盲测的第 500,000 步终态续算至第 507,200 步（t* = 1,000–1,014.4），每 80 步取一帧。颜色表示带符号的无量纲涡量，播放按展示节奏循环。原盲测数值检查通过，两柱 St 分别为 0.1618 和 0.1612，均高于论文约 7%–8%。',source:'https://doi.org/10.1038/s41598-024-66895-0'},
@@ -142,7 +176,7 @@ $('.dialog-close').addEventListener('click',closeDialog);dialog.addEventListener
 function openCase(c){openDialog(`<p class="dialog-eyebrow">MODEL ${c.module} · 实际求解器输出</p><h2 class="dialog-title" id="dialog-title">${c.name}</h2><img class="dialog-image" src="assets/cases/${reduced&&isAnimatedCase(c)?c.id+'-poster.png':c.file}" alt="${c.name}模拟结果"><p class="dialog-text">${c.description}</p><dl class="dialog-facts"><div><dt>数值模型</dt><dd>${c.method}</dd></div><div><dt>算例类型</dt><dd>既有研究算例 · 模型输出</dd></div></dl><p class="dialog-text">${c.scope}</p>${c.source?`<p class="dialog-text"><a href="${c.source}" target="_blank" rel="noopener noreferrer">查看论文与 Fig. 7 ↗</a></p>`:''}`);}
 const modelRows=[['001','多组分 / 多孔输运','D2Q9 Shan–Chen / 灰度反弹'],['002','反应扩散 / 溶解析出','D2Q5 多溶质 / 表面反应'],['003','自然对流','流 MRT / 热 MRT / 浮力'],['004','非牛顿流动','D3Q19 / 截断幂律'],['005','固液相变','D3Q7 总焓 SRT / MRT'],['006','移动颗粒','D3Q19 / 动量交换'],['007','共轭传热','流动 / 热 MRT / 共轭界面'],['008','多相相场','Cahn–Hilliard / 压力流场'],['009','气液传质','Henry 分配 / 传质 MRT'],['010','反应流动','多物种输运 / 隐式反应'],['011','二维搅拌','TRT / 体积惩罚'],['012','三维反应搅拌','D3Q19 / 守恒 FV / A+B→C'],['014','LES 三维搅拌','MRT / Coherent LES / IBM']];
 $('#model-directory').addEventListener('click',()=>openDialog(`<p class="dialog-eyebrow">GOBEYOND · MODEL LIBRARY</p><h2 class="dialog-title" id="dialog-title">围绕物理过程，积累求解能力。</h2><p class="dialog-text">模型库包含 13 类物理模块。各模块有独立的验证与边界范围；具备某个模块，不代表任意跨物理组合已经耦合。</p><table class="model-list"><thead><tr><th>模块</th><th>物理过程</th><th>模型方向</th></tr></thead><tbody>${modelRows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>`));
-function resultNotes(){openDialog(`<p class="dialog-eyebrow">REAL DATA · 可追溯算例</p><h2 class="dialog-title" id="dialog-title">三维流动，与搅拌扩散。</h2><p class="dialog-text">三维点云来自既有小槽可视化补算保存的 81 帧体积场，选取 30,720 个真实液体控制体内的空间采样位置。旋转网格先按各帧相位重采样到固定槽体坐标，再进行显示插值。点云是欧拉场值，不是液体粒子轨迹；箭头保留实际笛卡尔速度方向。</p><dl class="dialog-facts"><div><dt>三维记录</dt><dd>开机后 1.3473–2.2455 s；预热 60 转后释放示踪剂</dd></div><div><dt>扩散耦合</dt><dd>对流 + 独立分子扩散 Dm = 10⁻⁹ m²/s + 湍流扩散 Scₜ = 0.7</dd></div><div><dt>颜色</dt><dd>速度切片使用 0–12+ m/s；浓度点云按相对浓度 C/C∞，≥2 使用饱和色；可仅显示偏差超过 5% 的区域</dd></div><div><dt>静止启动记录</dt><dd>另一组独立启动补算的 28 个实际切片帧，开机后 0–1.3473 s</dd></div><div><dt>模型与范围</dt><dd>014 衍生 Coherent LES / IBM / standard-MRT 研究变体</dd></div></dl><p class="dialog-text">三维展示与静止启动属于不同记录，不拼接成同一次流动实现。CV 读数沿用对应实算帧的全分辨率统计；展示点的抽样与插值不用于重新计算混合时间。循环结束会回到记录起点，不表示物理场发生周期回归。</p>`);}
+function resultNotes(){openDialog(`<p class="dialog-eyebrow">REAL DATA · 可追溯算例</p><h2 class="dialog-title" id="dialog-title">三维流动，与搅拌扩散。</h2><p class="dialog-text">三维点云来自既有小槽可视化补算保存的 81 帧体积场，选取 30,720 个真实液体控制体内的空间采样位置。旋转网格先按各帧相位重采样到固定槽体坐标，再进行显示插值。点云是欧拉场值，不是液体粒子轨迹；箭头保留实际笛卡尔速度方向。</p><dl class="dialog-facts"><div><dt>三维记录</dt><dd>开机后 1.3473–2.2455 s；预热 60 转后释放示踪剂</dd></div><div><dt>扩散耦合</dt><dd>对流 + 独立分子扩散 Dm = 10⁻⁹ m²/s + 湍流扩散 Scₜ = 0.7</dd></div><div><dt>颜色</dt><dd>速度切片使用 0–12+ m/s；浓度点云按相对浓度 C/C∞，≥2 使用饱和色；可仅显示偏差超过 5% 的区域</dd></div><div><dt>静止启动记录</dt><dd>另一组独立启动补算的 28 个实际切片帧，开机后 0–1.3473 s</dd></div><div><dt>模型与范围</dt><dd>014 衍生 Coherent LES / IBM / standard-MRT 研究变体</dd></div></dl><p class="dialog-text">三维展示与静止启动属于不同记录，不拼接成同一次流动实现。同步剖面用穿过槽轴和释放点的竖直平面，取附近保存点做距离加权插值；箭头为附近速度在该平面内的投影。CV 读数沿用对应实算帧的全分辨率统计，折线使用对数轴。展示插值不用于重新计算混合时间。循环结束会回到记录起点，不表示物理场发生周期回归。</p>`);}
 $('#show-result-notes').addEventListener('click',resultNotes);
 $('#data-notes').addEventListener('click',()=>openDialog(`<p class="dialog-eyebrow">PRODUCT SCOPE · 数据与能力</p><h2 class="dialog-title" id="dialog-title">把能力说明，与真实结果放在一起。</h2><p class="dialog-text">几何区使用实际 CadQuery/STL 输出，并提供成熟反应器的参数化预览。网格区来自带孔叶片算例保存的实际计算格点与 IBM 节点；二维切片为原始分辨率，三维格点采用抽样展示。参数修改会更新预览与导出文件，后续网格和结果区仍展示已计算示例。</p><p class="dialog-text">当前 CAD 求解链路支持圆柱流体域、共轴同转速的刚体，以及相应位置的静止构件。一般几何建模与一般物理求解是不同的能力层，进出口、独立运动轴及其他边界需要对应的求解接口。</p><p class="dialog-text">算例图库全部来自已有数值模型输出。模型保留各自适用与验证范围，库内模块并不意味着任意组合均已耦合。产品页展示已有能力，不承诺所有输入都能未经检查地求解。</p>`));
 
