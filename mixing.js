@@ -2,7 +2,7 @@
 const N=112, HALF=75, BIN=7.5, BINS=20, NEIGHBORS=4, SQRT2=Math.SQRT2;
 const svgNS='http://www.w3.org/2000/svg';
 const speedColors=[[17,41,67],[35,122,151],[112,207,186],[254,206,115]];
-const tracerColors=[[184,79,111],[184,79,111],[137,36,68]];
+const tracerColors=[[27,65,102],[100,172,203],[234,244,227],[239,146,87],[161,48,39]];
 const clamp=(x,min,max)=>Math.min(max,Math.max(min,x));
 function ramp(colors){
   return Array.from({length:256},(_,i)=>{
@@ -45,7 +45,7 @@ function canvasState(canvas){
   const raw=small.getContext('2d');
   return {canvas,small,raw,context:canvas.getContext('2d'),image:raw.createImageData(N,N)};
 }
-function plotField(panel,map,a,b,blend,scales,table,transparent=false){
+function plotField(panel,map,a,b,blend,scales,table){
   const pixels=panel.image.data,{ids,weights}=map;
   for(let j=0;j<N*N;j++){
     let sum=0,weight=0;
@@ -55,13 +55,10 @@ function plotField(panel,map,a,b,blend,scales,table,transparent=false){
       const w=weights[index];
       sum+=w*((1-blend)*a[i]*scales[0]+blend*b[i]*scales[1]);weight+=w;
     }
-    const level=weight?clamp((sum/weight-scales[2])/(scales[3]-scales[2]),0,1):0;
-    const rgb=weight?table[Math.round(255*level)]:[15,38,47];
-    pixels[j*4]=rgb[0];pixels[j*4+1]=rgb[1];pixels[j*4+2]=rgb[2];
-    pixels[j*4+3]=transparent?Math.round(255*level):255;
+    const rgb=weight?table[Math.round(255*clamp((sum/weight-scales[2])/(scales[3]-scales[2]),0,1))]:[15,38,47];
+    pixels[j*4]=rgb[0];pixels[j*4+1]=rgb[1];pixels[j*4+2]=rgb[2];pixels[j*4+3]=255;
   }
   panel.raw.putImageData(panel.image,0,0);
-  if(transparent)panel.context.clearRect(0,0,panel.canvas.width,panel.canvas.height);
   panel.context.drawImage(panel.small,0,0,panel.canvas.width,panel.canvas.height);
 }
 function addSvg(parent,tag,attrs,label){
@@ -113,7 +110,7 @@ export class MixingReplay {
     if(blend===0)hi=lo;
     const n=this.meta.point_count,frame=(buffer,i)=>new Uint16Array(buffer,i*n*2,n),a=this.meta.frames[lo],b=this.meta.frames[hi];
     plotField(this.speed,this.map,frame(speed,lo),frame(speed,hi),blend,[this.meta.speed_scale,this.meta.speed_scale,0,6],this.speedRamp);
-    plotField(this.tracer,this.map,frame(q,lo),frame(q,hi),blend,[a.q_scale,b.q_scale,contrast ? .8 : 0,contrast ? 1.2 : 2],this.tracerRamp,true);
+    plotField(this.tracer,this.map,frame(q,lo),frame(q,hi),blend,[a.q_scale,b.q_scale,contrast ? .8 : 0,contrast ? 1.2 : 2],this.tracerRamp);
     const count=this.meta.arrow_count,va=new Int16Array(vectors,lo*count*6,count*3),vb=new Int16Array(vectors,hi*count*6,count*3);
     const {context:ctx,canvas}=this.speed,m=canvas.width/150;
     ctx.beginPath();ctx.lineWidth=1.15;ctx.strokeStyle='#f1fbec';

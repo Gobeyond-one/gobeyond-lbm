@@ -1,6 +1,6 @@
 import {ReactorView} from './scene.js?v=20261103-cloud';
-import {FieldCloud} from './pointcloud.js?v=20261110-tracer-opacity';
-import {MixingReplay} from './mixing.js?v=20261110-tracer-opacity';
+import {FieldCloud} from './pointcloud.js?v=20261103-cloud';
+import {MixingReplay} from './mixing.js?v=20261110-mixing';
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const icon=id=>`<svg aria-hidden="true"><use href="#i-${id}"/></svg>`;
@@ -128,7 +128,7 @@ async function selectResult(type){
   $('#legend-title').textContent=concentration?'相对浓度 C / C∞':'速率 / m·s⁻¹';$('#legend-mid').textContent=concentration?'1':'6';$('#legend-high').textContent=concentration?'≥2':'12+';
   $('#simulation-case-title').textContent=startup?'六叶搅拌槽 · 流体从静止启动':concentration?'六叶搅拌槽 · 示踪剂对流与扩散':'六叶搅拌槽 · 三维速度场';
   $('#simulation-heading').innerHTML=concentration?'随流动展开，<br>在扩散中混合。':'叶片提供动力，<br>流场响应结构。';
-  $('#result-description').textContent=concentration?'先看速度和箭头，找出桨区射流与槽内循环，再对照示踪剂如何铺开。浓度越低越透明，越高颜色越深。色标的 1 表示均匀混合时的浓度。':startup?'流体以零速度开始，搅拌桨按给定转速启动。这组记录保留两个真实速度切片，供观察启动过程。':'颜色表示固定空间采样位置的速率，箭头表示实际速度方向。旋转查看桨区射流和槽内上下循环。';
+  $('#result-description').textContent=concentration?'先看速度和箭头，找出桨区射流与槽内循环，再对照示踪剂如何铺开。色标中央的 1 表示均匀混合时的浓度。':startup?'流体以零速度开始，搅拌桨按给定转速启动。这组记录保留两个真实速度切片，供观察启动过程。':'颜色表示固定空间采样位置的速率，箭头表示实际速度方向。旋转查看桨区射流和槽内上下循环。';
   $('#result-scope').textContent=startup?'静止 → 60 转 · 28 帧':concentration?'释放后 0–0.8982 s · 81 帧':'60 转预热后 · 81 帧体积场';
   $('#result-metric-label').textContent=concentration?'全槽 CV（实算帧）':startup?'流体初始速度':'三维采样点';$('#result-metric').textContent=startup?'0 m/s':'30,720';
   $('#simulation-hint').textContent=startup?'拖动旋转 · 静止启动的两个实际切片':'拖动旋转 · 固定空间的体积采样点';
