@@ -6,9 +6,9 @@
   <meta name="description" content="格流 LBM · GoBeyond：通过自然语言与参数化模板构建几何，生成格子网格，探索流动、传热、传质与反应模拟。">
   <title>格流 LBM · 从结构想象，到流动洞见</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=20261110-mixing">
+  <link rel="stylesheet" href="style.css?v=20261110-tracer-opacity">
   <script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js","three/addons/controls/OrbitControls.js":"./assets/vendor/OrbitControls.js"}}</script>
-  <script type="module" src="app.js?v=20261110-mixing"></script>
+  <script type="module" src="app.js?v=20261110-tracer-opacity"></script>
 </head>
 <body>
 <svg class="symbols" aria-hidden="true"><defs>
@@ -119,7 +119,7 @@
    <div class="cloud-controls" id="cloud-controls" hidden><span class="cloud-format" id="cloud-format">三维浓度点云</span><label><input id="cloud-arrows" type="checkbox" checked>流动方向</label><label><input id="cloud-cutaway" type="checkbox">半槽显示</label><label id="deviation-control"><input id="cloud-deviation" type="checkbox">只看浓度偏差 &gt;5%</label><label class="cloud-opacity">点云透明度<input id="cloud-opacity" type="range" min="0.06" max="0.5" step="0.01" value="0.26" aria-label="点云透明度"></label></div>
    <div class="simulation-body"><div class="simulation-stage"><div id="simulation-view" class="three-view" role="img" aria-label="可切换三维速度切片与扩散浓度点云的真实计算结果"></div><div class="mixing-pair" id="mixing-pair" hidden>
       <figure class="mix-panel"><figcaption><strong>流动方向</strong><span>速度 · m/s</span></figcaption><canvas id="mix-speed" width="336" height="336" role="img" aria-label="通过释放点的竖直剖面。颜色表示速度，箭头表示同一时刻的面内速度方向"></canvas><div class="mix-scale speed"><i></i><span>0</span><span>3</span><span>≥6</span></div></figure>
-      <figure class="mix-panel"><figcaption><strong>示踪剂浓度</strong><span>C / C∞</span></figcaption><canvas id="mix-tracer" width="336" height="336" role="img" aria-label="与速度同步的竖直剖面。蓝色低于混匀浓度，橙红色高于混匀浓度"></canvas><div class="mix-scale tracer"><i></i><span id="mix-tracer-low">0</span><span>1 · 混匀值</span><span id="mix-tracer-high">≥2</span></div></figure>
+      <figure class="mix-panel"><figcaption><strong>示踪剂浓度</strong><span>C / C∞</span></figcaption><canvas id="mix-tracer" width="336" height="336" role="img" aria-label="与速度同步的竖直剖面。低浓度透明，浓度越高颜色越深"></canvas><div class="mix-scale tracer"><i></i><span id="mix-tracer-low">0</span><span>1 · 混匀值</span><span id="mix-tracer-high">≥2</span></div></figure>
       <p class="mix-caption">同一时刻、同一条穿过槽轴和释放点的竖直剖面。颜色由附近保存点插值得到。</p>
      </div><div class="simulation-stage-info"><span id="simulation-case-title">六叶搅拌槽 · 从静止启动的速度场</span><b id="simulation-time">载入中…</b><small id="simulation-clock"></small></div><div class="color-legend" id="simulation-legend"><span id="legend-title">速率 / m·s⁻¹</span><i></i><div><span id="legend-low">0</span><span id="legend-mid">6</span><span id="legend-high">12+</span></div></div><span class="simulation-hint" id="simulation-hint">拖动旋转 · 查看两个相交切面</span><div class="loading-note" id="result-loading">载入真实流场记录…</div></div>
     <aside class="simulation-insights"><p class="mini-label">CASE STUDY / 搅拌槽</p><h3 id="simulation-heading">叶片提供动力，<br>流场响应结构。</h3><p id="result-description">用三维体积采样点观察搅拌后的速度分布，并通过箭头辨认上下循环。</p><dl><div><dt>槽径 / 液高</dt><dd>150 / 150 mm</dd></div><div><dt>桨径 / 转速</dt><dd>50 mm / 2672 rpm</dd></div><div><dt>流动模型</dt><dd>Coherent LES · IBM</dd></div><div><dt id="result-scope-label">记录范围</dt><dd id="result-scope">60 转预热后的 81 帧体积场</dd></div><div><dt id="result-metric-label">三维采样点</dt><dd id="result-metric">30,720</dd></div></dl><div class="mix-progress" id="mix-progress" hidden><p><strong>全槽混合进程</strong><span>CV · 对数轴</span></p><svg id="mix-cv-graph" viewBox="0 0 270 108" role="img" aria-label="从实际计算保存帧读取的全槽浓度变异系数，光标随当前实算帧移动"></svg><small>CV 越低，浓度分布越均匀。</small></div><button class="text-button on-dark-text" id="show-result-notes">关于这组结果 <svg><use href="#i-up"/></svg></button></aside>
