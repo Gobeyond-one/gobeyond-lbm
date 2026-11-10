@@ -1,5 +1,44 @@
 [
   {
+    "id": "ali2024-wake",
+    "module": "Ali et al. 2024, Fig. 7",
+    "file": "ali2024-wake.webp",
+    "poster": "ali2024-wake-poster.png",
+    "doi": "10.1038/s41598-024-66895-0",
+    "origin": "Continuation from the 500,000-step blind Agent reproduction checkpoint, with unchanged collision and boundary rules",
+    "method": "D2Q9/BGK",
+    "grid": [
+      640,
+      560
+    ],
+    "reynolds": 200,
+    "gap_ratio": 6,
+    "stagger_degrees": 45,
+    "frames": 91,
+    "step_start": 500000,
+    "step_end": 507200,
+    "step_stride": 80,
+    "t_star": [
+      1000,
+      1014.4
+    ],
+    "field": "signed vorticity (d/dx of uy minus d/dy of ux), scaled by d/Uin",
+    "blind_benchmark": {
+      "run_complete": "pass",
+      "numerical_checks": "pass",
+      "paper_strouhal": "fail",
+      "measured_st": [
+        0.16176,
+        0.16118
+      ],
+      "paper_st": [
+        0.151,
+        0.149
+      ]
+    },
+    "display": "Loop returns to the start of the saved sequence. Playback is accelerated relative to the simulation timeline."
+  },
+  {
     "id": "mass-transfer",
     "module": "009_gas_liquid_mass_transfer",
     "file": "mass-transfer.gif",
